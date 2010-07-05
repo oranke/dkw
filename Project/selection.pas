@@ -1,9 +1,9 @@
-{-----------------------------------------------------------------------------
+Ôªø{-----------------------------------------------------------------------------
  Unit Name: selection
  Author:    oranke_f
  Date:      2010-07-01
  Purpose:
-  selection.c ∆˜∆√.
+  selection.c Ìè¨ÌåÖ.
   
  History:
 
@@ -86,7 +86,7 @@ begin
   ptr  := base;
   c    := gSelectRect.Left;
 
-  // todo: ¡∂∞« √º≈©«ÿ!!
+  // todo: Ï°∞Í±¥ Ï≤¥ÌÅ¨Ìï¥!!
 	//for( ; c >= gCSI->srWindow.Left ; c--, ptr--)
   while c >= gCSI^.srWindow.Left do
   begin
@@ -116,7 +116,7 @@ begin
   ptr  := base;
   c    := gSelectRect.Right;
     
-  // todo: ¡∂∞« √º≈©«ÿ!!
+  // todo: Ï°∞Í±¥ Ï≤¥ÌÅ¨Ìï¥!!
 	//for( ; c <= gCSI->srWindow.Right ; c++, ptr++)
   while c <= gCSI^.srWindow.Right do
   begin

@@ -1,16 +1,16 @@
-{-----------------------------------------------------------------------------
+ï»¿{-----------------------------------------------------------------------------
  Unit Name: option
  Author:    oranke_f
  Date:      2010-07-02
  Purpose:
-    option.h, option.cpp ÆÄÀÏÀÇ ¹ø¿ª.
-    ckOpt Å¬·¡½º¸¦ ¹ø¿ªÇÑ TDkOpt °´Ã¼ ±¸Çö.
+    option.h, option.cpp íŒŒì¼ì˜ ë²ˆì—­.
+    ckOpt í´ëž˜ìŠ¤ë¥¼ ë²ˆì—­í•œ TDkOpt ê°ì²´ êµ¬í˜„.
 
-    ½ÇÇàÆÄÀÏ¸í°ú µ¿ÀÏÇÏ¸é¼­ È®ÀåÀÚ°¡ opt ÀÎ ÆÄÀÏ¿¡¼­ Á¤º¸ ÀÐÀ½.
+    ì‹¤í–‰íŒŒì¼ëª…ê³¼ ë™ì¼í•˜ë©´ì„œ í™•ìž¥ìžê°€ opt ì¸ íŒŒì¼ì—ì„œ ì •ë³´ ì½ìŒ.
 
  History:
   2010-07-02
-    Á¦ÀÛ ½ÃÀÛ.
+    ì œìž‘ ì‹œìž‘.
 
 -----------------------------------------------------------------------------}
 
@@ -57,7 +57,7 @@ type
     destructor Destroy; override;
 
   	procedure loadXdefaults();
-    // argc, argv¸¦ ÀÎÀÚ·Î ÇÏ´Â set ÇÔ¼ö º¯°æ.
+    // argc, argvë¥¼ ì¸ìžë¡œ í•˜ëŠ” set í•¨ìˆ˜ ë³€ê²½.
   	function setArgs(): BOOL;
 
   public
