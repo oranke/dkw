@@ -32,6 +32,9 @@ function CSI_WndRows(csi: PConsoleScreenBufferInfo): Integer;
 
 //* main.cpp */
 var
+  gUseCtrl_C_Copy : BOOL;
+  gUseCtrl_V_Paste: BOOL;
+
   gStdIn      : THandle = 0;
   gStdOut     : THandle = 0;
   gFontW      : DWORD;
@@ -46,9 +49,13 @@ var
 //* selection.cpp */
   selectionGetArea: function (var sr: SMALL_RECT): BOOL;
   selectionClear: procedure (hWnd: HWND);
+
+  selectionToClipBoard: procedure(hwnd: HWND);
+
   onLBtnDown: procedure (hWnd: HWND; x, y: Integer);
   onLBtnUp: procedure (hWnd: HWND; x, y: Integer);
   onMouseMove: procedure (hWnd: HWND; x, y: Integer);
+
 
 //* misc.cpp */
   onPasteFromClipboard: procedure (hWnd: HWND);

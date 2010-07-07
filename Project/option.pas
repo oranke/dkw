@@ -57,6 +57,10 @@ type
     fTitle: string;
     fBgBmp: String;
     fCurDir: string;
+    fFontSizeCtrl: BOOL;
+    fFontSizeCtrlStep: Integer;
+    fUseCtrl_C_Copy: BOOL;
+    fUseCtrl_V_Paste: BOOL;
   private
   protected
   public
@@ -69,7 +73,6 @@ type
 {$ENDIF}    
     // argc, argv를 인자로 하는 set 함수 변경.
   	function setArgs(): BOOL;
-
   public
 	  property isWinPos	  :	bool	read fIsWinPos;
   	property getWinPosX	:	integer	read fWinPosX;
@@ -101,7 +104,15 @@ type
     property getBgBmp: String read fBgBmp;
   	property getCurDir: string read fCurDir;
   	property getTitle: string read fTitle;
+
+    property getFontSizeCtrl: bool read fFontSizeCtrl;
+    property getFontSizeCtrlStep: Integer read fFontSizeCtrlStep;
+    property getUseCtrl_C_Copy: bool read fUseCtrl_C_Copy;
+    property getUseCtrl_V_Paste: bool read fUseCtrl_V_Paste;
+    
   end;
+
+procedure WriteFontSize(const aFontSize: Integer);
 
 implementation
 
@@ -233,7 +244,7 @@ begin
       $0BE47B74: aColor := $DCF8FF; // "cornsilk1"  
       $0BE47B75: aColor := $CDE8EE; // "cornsilk2"  
       $0BE47B76: aColor := $B1C8CD; // "cornsilk3"  
-      $0BE47B77: aColor := $78888B; // "cornsilk4"  
+      $0BE47B77: aColor := $78888B; // "cornsilk4"
       $3A192623: aColor := $FFFF00; // "cyan"  
       $725362CE: aColor := $FFFF00; // "cyan1"  
       $725362CF: aColor := $EEEE00; // "cyan2"  
@@ -287,7 +298,7 @@ begin
       $7BA660AD: aColor := $CDCD79; // "DarkSlateGray3"
       $7BA660AE: aColor := $8B8B52; // "DarkSlateGray4"  
       $3B5BE202: aColor := $4F4F2F; // "DarkSlateGrey"  
-      $6F05806B: aColor := $D1CE00; // "DarkTurquoise"  
+      $6F05806B: aColor := $D1CE00; // "DarkTurquoise"
       $DAE7A6F5: aColor := $D30094; // "DarkViolet"  
       $0B0DA84A: aColor := $9314FF; // "deep pink"  
       $472BF9AD: aColor := $FFBF00; // "deep sky blue"  
@@ -341,7 +352,7 @@ begin
       $07F8E763: aColor := $1C1C1C; // "gray11"  
       $07F8E764: aColor := $1F1F1F; // "gray12"
       $07F8E765: aColor := $212121; // "gray13"  
-      $07F8E766: aColor := $242424; // "gray14"  
+      $07F8E766: aColor := $242424; // "gray14"
       $07F8E767: aColor := $262626; // "gray15"  
       $07F8E768: aColor := $292929; // "gray16"  
       $07F8E769: aColor := $2B2B2B; // "gray17"  
@@ -395,7 +406,7 @@ begin
       $07FDE89D: aColor := $999999; // "gray60"  
       $07FDE89E: aColor := $9C9C9C; // "gray61"  
       $07FDE89F: aColor := $9E9E9E; // "gray62"  
-      $07FDE8A0: aColor := $A1A1A1; // "gray63"  
+      $07FDE8A0: aColor := $A1A1A1; // "gray63"
       $07FDE8A1: aColor := $A3A3A3; // "gray64"  
       $07FDE8A2: aColor := $A6A6A6; // "gray65"  
       $07FDE8A3: aColor := $A8A8A8; // "gray66"  
@@ -449,7 +460,7 @@ begin
       $ED546D52: aColor := $FFFFFF; // "grey100"  
       $C2142A5F: aColor := $1C1C1C; // "grey11"  
       $C2142A60: aColor := $1F1F1F; // "grey12"  
-      $C2142A61: aColor := $212121; // "grey13"  
+      $C2142A61: aColor := $212121; // "grey13"
       $C2142A62: aColor := $242424; // "grey14"  
       $C2142A63: aColor := $262626; // "grey15"
       $C2142A64: aColor := $292929; // "grey16"  
@@ -503,7 +514,7 @@ begin
       $3E586A57: aColor := $0F0F0F; // "grey6"  
       $C2192B99: aColor := $999999; // "grey60"
       $C2192B9A: aColor := $9C9C9C; // "grey61"  
-      $C2192B9B: aColor := $9E9E9E; // "grey62"  
+      $C2192B9B: aColor := $9E9E9E; // "grey62"
       $C2192B9C: aColor := $A1A1A1; // "grey63"
       $C2192B9D: aColor := $A3A3A3; // "grey64"  
       $C2192B9E: aColor := $A6A6A6; // "grey65"  
@@ -557,7 +568,7 @@ begin
       $2B34A2D1: aColor := $623A8B; // "HotPink4"  
       $9BEE55A8: aColor := $5C5CCD; // "indian red"  
       $5B280DDA: aColor := $5C5CCD; // "IndianRed"
-      $7CB568D7: aColor := $6A6AFF; // "IndianRed1"  
+      $7CB568D7: aColor := $6A6AFF; // "IndianRed1"
       $7CB568D8: aColor := $6363EE; // "IndianRed2"  
       $7CB568D9: aColor := $5555CD; // "IndianRed3"
       $7CB568DA: aColor := $3A3A8B; // "IndianRed4"  
@@ -665,7 +676,7 @@ begin
       $39E60B44: aColor := $621C8B; // "maroon4"  
       $2A53A209: aColor := $AACD66; // "medium aquamarine"  
       $D3EA1C25: aColor := $CD0000; // "medium blue"  
-      $CF081F2E: aColor := $D355BA; // "medium orchid"  
+      $CF081F2E: aColor := $D355BA; // "medium orchid"
       $6ED35567: aColor := $DB7093; // "medium purple"  
       $F7D04187: aColor := $71B33C; // "medium sea green"  
       $D367602C: aColor := $EE687B; // "medium slate blue"  
@@ -719,7 +730,7 @@ begin
       $BD8CA00A: aColor := $228B69; // "OliveDrab4"  
       $B427544E: aColor := $00A5FF; // "orange"  
       $77BA5EDF: aColor := $0045FF; // "orange red"  
-      $A9FBBF63: aColor := $00A5FF; // "orange1"  
+      $A9FBBF63: aColor := $00A5FF; // "orange1"
       $A9FBBF64: aColor := $009AEE; // "orange2"  
       $A9FBBF65: aColor := $0085CD; // "orange3"  
       $A9FBBF66: aColor := $005A8B; // "orange4"  
@@ -773,7 +784,7 @@ begin
       $9253D1FF: aColor := $CD96CD; // "plum3"  
       $9253D200: aColor := $8B668B; // "plum4"  
       $7CD7BAA1: aColor := $E6E0B0; // "powder blue"  
-      $98216533: aColor := $E6E0B0; // "PowderBlue"  
+      $98216533: aColor := $E6E0B0; // "PowderBlue"
       $AE0DCF7C: aColor := $F020A0; // "purple"  
       $A4E20FB5: aColor := $FF309B; // "purple1"  
       $A4E20FB6: aColor := $EE2C91; // "purple2"  
@@ -827,7 +838,7 @@ begin
       $1B3D1D77: aColor := $EEC07E; // "SkyBlue2"  
       $1B3D1D78: aColor := $CDA66C; // "SkyBlue3"  
       $1B3D1D79: aColor := $8B704A; // "SkyBlue4"  
-      $D04BA541: aColor := $CD5A6A; // "slate blue"  
+      $D04BA541: aColor := $CD5A6A; // "slate blue"
       $BBCE112A: aColor := $908070; // "slate gray"  
       $BBD21226: aColor := $908070; // "slate grey"  
       $A3E8D293: aColor := $CD5A6A; // "SlateBlue"  
@@ -1036,6 +1047,11 @@ begin
 	fisTranspColor := false;
 	ftranspColor := 0;
 	fisTopMost := false;
+
+  fFontSizeCtrl := true;
+  fFontSizeCtrlStep := 2;
+  fUseCtrl_C_Copy  := false;
+  fUseCtrl_V_Paste := false;
 end;
 
 destructor TDkOpt.Destroy;
@@ -1085,6 +1101,12 @@ begin
     INIFile.ReadGeometry(INISection, 'geometry', fWinCharW, fWinCharH);
     fSaveLines   := INIFile.ReadInteger(INISection, 'saveLines', fSaveLines);
 
+    fFontSizeCtrl     := INIFile.ReadYesNo(INISection, 'fontSizeCtrl', fFontSizeCtrl);
+    fFontSizeCtrlStep := INIFile.ReadInteger(INISection, 'fontSizeCtrlStep', fFontSizeCtrlStep);
+    fUseCtrl_C_Copy   := INIFile.ReadYesNo(INISection, 'UseCtrl_C_Copy', fUseCtrl_C_Copy);
+    fUseCtrl_V_Paste  := INIFile.ReadYesNo(INISection, 'UseCtrl_V_Paste', fUseCtrl_V_Paste);
+
+
     for i := Low(fColors) to High(fColors) do
       fColors[i] := INIFile.ReadColor(INISection, 'color' + IntToStr(i), fColors[i]);
   finally
@@ -1127,6 +1149,12 @@ begin
     INIFile.WriteGeometry(INISection, 'geometry', fWinCharW, fWinCharH);
     INIFile.WriteInteger(INISection, 'saveLines', fSaveLines);
 
+    INIFile.WriteYesNo(INISection, 'fontSizeCtrl', fFontSizeCtrl);
+    INIFile.WriteInteger(INISection, 'fontSizeCtrlStep', fFontSizeCtrlStep);
+
+    INIFile.WriteYesNo(INISection, 'UseCtrl_C_Copy', fUseCtrl_C_Copy);
+    INIFile.WriteYesNo(INISection, 'UseCtrl_V_Paste', fUseCtrl_V_Paste);
+
     for i := Low(fColors) to High(fColors) do
       INIFile.WriteColor(INISection, 'color' + IntToStr(i), fColors[i]);
   finally
@@ -1150,7 +1178,20 @@ begin
 end;
 
 
+procedure WriteFontSize(const aFontSize: Integer);
+var
+  ININame: String;
+  INIFile: TMyINIFile;
+begin
+  ININame := ExtractFilePath(ParamStr(0)) + ExtractJustName(ParamStr(0)) + '.ini';
 
+  INIFile:= TMyINIFile.Create(ININame);
+  try
+    INIFile.WriteInteger(INISection, 'fontSize', aFontSize);
+  finally
+    INIFile.Free;
+  end;
+end;
 
 initialization
 

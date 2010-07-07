@@ -61,6 +61,10 @@ var
 
   gTitle : PWideChar = nil;
 
+  gFontSizeCtrl : BOOL;
+  gFontSizeCtrlStep: Integer;
+
+
 const
   //* setConsoleFont */
   MAX_FONTS = 128;
@@ -685,10 +689,40 @@ end;
   //DefWindowProc: function (hWnd: HWND; Msg: UINT; wParam: WPARAM; lParam: LPARAM): LRESULT; stdcall = DefWindowProcW;
 //function DefWindowProc(hWnd: HWND; Msg: UINT; wParam: WPARAM; lParam: LPARAM): LRESULT; stdcall; external 'user32.dll' name 'DefWindowProcW';
 
+function create_font(name: string; height: Integer): BOOL; forward;
+
+// 폰트의 크기 조절.
+procedure ResizeFont(hwnd: HWND; const aValue: Integer);
+var
+  fw, fh, width, height: LongInt;
+  NewSize: Integer;
+begin
+  if not gFontSizeCtrl then Exit;
+
+  NewSize := -gFontLog.lfHeight + aValue;
+  if NewSize <= 0  then Exit;
+
+  create_font(string(gFontLog.lfFaceName), -gFontLog.lfHeight + aValue);
+
+  fw := (gFrame.right - gFrame.left) + (Integer(gBorderSize) * 2);
+  fh := (gFrame.bottom - gFrame.top) + (Integer(gBorderSize) * 2);
+
+  width := Integer(gWinW) * Integer(gFontW) + fw;
+  height := Integer(gWinH) * Integer(gFontH) + fh;
+
+  SetWindowPos(hwnd, 0, 0, 0, width, height, SWP_NOMOVE);
+
+  InvalidateRect(hWnd, nil, TRUE);
+
+  WriteFontSize(-gFontLog.lfHeight);
+end;
+
 function WndProc(hWnd: HWND; msg: UINT; wp: WPARAM; lp: LPARAM): LRESULT; stdcall;
 var
   imc: THandle;
   sb: WPARAM;
+
+  //fw, fh, width, height: LongInt;
 begin
   Result := 1;
 
@@ -788,6 +822,23 @@ begin
 
 	  WM_KEYDOWN,
 	  WM_KEYUP:
+
+    if gUseCtrl_C_Copy and (msg = WM_KEYDOWN) and (wp=ord('C')) and BOOL(GetKeyState(VK_CONTROL) and $8000) then
+    begin
+      selectionToClipBoard(hwnd);    
+    end else
+    if gUseCtrl_V_Paste and (msg = WM_KEYDOWN) and (wp=ord('V')) and BOOL(GetKeyState(VK_CONTROL) and $8000) then
+    begin
+      onPasteFromClipboard(hWnd);
+    end else
+    if (msg = WM_KEYDOWN) and (wp=VK_ADD) and BOOL(GetKeyState(VK_CONTROL) and $8000) then
+    begin
+      ResizeFont(hwnd, gFontSizeCtrlStep);
+    end else
+    if (msg = WM_KEYDOWN) and (wp=VK_SUBTRACT) and BOOL(GetKeyState(VK_CONTROL) and $8000) then
+    begin
+      ResizeFont(hwnd, -gFontSizeCtrlStep);
+    end else
 		if ((wp = VK_NEXT) or (wp = VK_PRIOR) or
   	    (wp = VK_HOME) or (wp = VK_END)) and
 		   BOOL(GetKeyState(VK_SHIFT) and $8000) then
@@ -801,10 +852,10 @@ begin
 				PostMessageW(gConWnd, WM_VSCROLL, sb, 0);
       end;
     end else
-    if (wp = VK_INSERT) and
+    if (msg = WM_KEYDOWN) and (wp = VK_INSERT) and
   		 BOOL(GetKeyState(VK_SHIFT) and $8000) then
     begin
-			if (msg = WM_KEYDOWN) then onPasteFromClipboard(hWnd);
+			onPasteFromClipboard(hWnd);
     end else
     begin
 			PostMessageW(gConWnd, msg, wp, lp);
@@ -817,23 +868,8 @@ end;
 
 //*****************************************************************************/
 
-procedure SAFE_CloseHandle(var handle: THandle);
-begin
-	if BOOL(handle) then
-  begin
-    CloseHandle(handle);
-    handle := 0;
-  end;
-end;
-
-procedure SAFE_DeleteObject(var handle: THandle);
-begin
-	if BOOL(handle) then
-  begin
-    DeleteObject(handle);
-    handle := 0;
-  end;
-end;
+procedure SAFE_CloseHandle(var handle: THandle); forward;
+procedure SAFE_DeleteObject(var handle: THandle); forward;
 
 //*----------*/
 function create_window(opt: TDkOpt): BOOL;
@@ -853,13 +889,14 @@ begin
 	//trace("create_window\n");
 
 	hInstance := GetModuleHandle(nil);
-	className := 'CkwWindowClass';
+	className := 'DkwWindowClass';
 	style := WS_OVERLAPPEDWINDOW;
 	exstyle := WS_EX_ACCEPTFILES;
 
 	if opt.isTranspColor or
 	   ((0 < opt.getTransp) and (opt.getTransp < 255)) then
 		exstyle :=  exstyle or WS_EX_LAYERED;
+    //or WS_EX_COMPOSITED;
 
 	if opt.isScrollRight then
 		exstyle := exstyle or WS_EX_RIGHTSCROLLBAR
@@ -1015,7 +1052,7 @@ begin
 		FreeMem(buf);
     Exit;
   end;
-  
+
 	FreeMem(buf);
 	CloseHandle(pi.hThread);
 	gChild := pi.hProcess;
@@ -1156,7 +1193,7 @@ begin
 	__hide_alloc_console();
 {$ELSE}
   AllocConsole();
-{$ENDIF}  
+{$ENDIF}
 
   gConWnd := GetConsoleWindow();
 	while (gConWnd = 0) do
@@ -1264,6 +1301,11 @@ begin
 	gBorderSize := opt.getBorderSize;
 	gLineSpace := opt.getLineSpace;
 
+  gFontSizeCtrl     := opt.getFontSizeCtrl;
+  gFontSizeCtrlStep := opt.getFontSizeCtrlStep;
+  gUseCtrl_C_Copy   := opt.getUseCtrl_C_Copy;
+  gUseCtrl_V_Paste  := opt.getUseCtrl_V_Paste;
+
 	if Length(opt.getBgBmp) <> 0 then
 		gBgBmp := LoadImageA(0, PAnsiChar(opt.getBgBmp), IMAGE_BITMAP, 0,0, LR_LOADFROMFILE);
 
@@ -1299,6 +1341,24 @@ begin
 end;
 
 //*----------*/
+
+procedure SAFE_CloseHandle(var handle: THandle);
+begin
+	if BOOL(handle) then
+  begin
+    CloseHandle(handle);
+    handle := 0;
+  end;
+end;
+
+procedure SAFE_DeleteObject(var handle: THandle);
+begin
+	if BOOL(handle) then
+  begin
+    DeleteObject(handle);
+    handle := 0;
+  end;
+end;
 
 procedure _terminate();
 begin
@@ -1355,3 +1415,7 @@ initialization
 finalization
 
 end.
+
+
+
+

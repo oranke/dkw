@@ -386,7 +386,8 @@ end;
 {$WRITEABLECONST OFF}
 
 //*----------*/
-procedure onLBtnUp(hWnd: HWND; x, y: Integer);
+
+procedure selectionToClipBoard(hwnd: HWND);
 var
   str: PWideChar;
   _length: Integer;
@@ -394,9 +395,6 @@ var
   ptr: PWideChar;
   _result: BOOL;
 begin
-	if (hWnd <> GetCapture()) then Exit;
-	ReleaseCapture();
-
 	if (not Assigned(gScreen)) or (not Assigned(gCSI)) then Exit;
 	//window_to_charpos(x, y);
 
@@ -436,6 +434,15 @@ begin
 	FreeMem(str);
 end;
 
+procedure onLBtnUp(hWnd: HWND; x, y: Integer);
+begin
+	if (hWnd <> GetCapture()) then Exit;
+	ReleaseCapture();
+
+  if not gUseCtrl_C_Copy then
+    selectionToClipBoard(hwnd);
+end;
+
 
 //*----------*/
 procedure onMouseMove(hWnd: HWND; x, y: Integer);
@@ -472,6 +479,7 @@ end;
 initialization
   dkw_h.selectionGetArea := selectionGetArea;
   dkw_h.selectionClear   := selectionClear;
+  dkw_h.selectionToClipBoard := selectionToClipBoard;
 
   dkw_h.onLBtnDown:= onLBtnDown;
   dkw_h.onLBtnUp:= onLBtnUp;
