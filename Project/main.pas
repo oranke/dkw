@@ -539,6 +539,8 @@ begin
 end;
 
 //*----------*/
+
+
 {$WRITEABLECONST ON}
 procedure onTimer(hWnd: THandle);
 const
@@ -578,7 +580,11 @@ begin
   begin
 		GetMem(str, SizeOf(WideChar) * 256);
 		GetConsoleTitleW(str, 256);
-		if Assigned(gTitle) and  not BOOL(WideCompareStr(gTitle^, str^)) then
+
+		//if Assigned(gTitle) and  not BOOL(WideCompareStr(gTitle^, str^)) then
+		if Assigned(gTitle) and
+      not BOOL(CompareStringW(LOCALE_USER_DEFAULT, 0, gTitle, Length(gTitle),
+           str, Length(str)) - 2) then
 			FreeMem(str)
 		else
     begin
@@ -811,6 +817,23 @@ end;
 
 //*****************************************************************************/
 
+procedure SAFE_CloseHandle(var handle: THandle);
+begin
+	if BOOL(handle) then
+  begin
+    CloseHandle(handle);
+    handle := 0;
+  end;
+end;
+
+procedure SAFE_DeleteObject(var handle: THandle);
+begin
+	if BOOL(handle) then
+  begin
+    DeleteObject(handle);
+    handle := 0;
+  end;
+end;
 
 //*----------*/
 function create_window(opt: TDkOpt): BOOL;
@@ -1034,6 +1057,7 @@ begin
 		//MultiByteToWideChar(CP_ACP,0, name, -1, gFontLog.lfFaceName, LF_FACESIZE);
 	//}
 
+	SAFE_DeleteObject(gFont);
 	gFont := CreateFontIndirect(gFontLog);
 
 	//* calc font size */
@@ -1275,23 +1299,6 @@ begin
 end;
 
 //*----------*/
-procedure SAFE_CloseHandle(var handle: THandle);
-begin
-	if BOOL(handle) then
-  begin
-    CloseHandle(handle);
-    handle := 0;
-  end;
-end;
-
-procedure SAFE_DeleteObject(var handle: THandle);
-begin
-	if BOOL(handle) then
-  begin
-    DeleteObject(handle);
-    handle := 0;
-  end;
-end;
 
 procedure _terminate();
 begin

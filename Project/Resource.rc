@@ -13,8 +13,8 @@ END
 
 
 1 VERSIONINFO
- FILEVERSION 2010,7,2,1
- PRODUCTVERSION 2010,7,2,1
+ FILEVERSION 2010,7,7,1
+ PRODUCTVERSION 2010,7,7,1
  {
   BLOCK "StringFileInfo"
   {
@@ -23,13 +23,13 @@ END
     VALUE "Comments", "\000"
     VALUE "CompanyName", "\000"
     VALUE "FileDescription", "DKW. Delphi port of CKW\000"
-    VALUE "FileVersion", "2010.7.2.1\000"
+    VALUE "FileVersion", "2010,7,7,1\000"
     VALUE "InternalName", "\000"
     VALUE "LegalCopyright", "Copyright 2010 oranke <oranke@gmail.com>\000"
     VALUE "LegalTrademarks", "\000"
     VALUE "OriginalFilename", "\000"
     VALUE "ProductName", "\000"
-    VALUE "ProductVersion", "2010.7.2.1\000"
+    VALUE "ProductVersion", "2010.7.7.1\000"
    }
   }
   BLOCK "VarFileInfo"
