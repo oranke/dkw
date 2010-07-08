@@ -6,6 +6,8 @@
   selection.c 포팅.
   
  History:
+  2010-07-08
+    copyStringToClipboard 함수 추가. 
 
 -----------------------------------------------------------------------------}
 
@@ -171,7 +173,6 @@ begin
   end;
 end;
 
-//static void copy_char(wchar_t*& p, CHAR_INFO* src, SHORT start, SHORT end, bool ret = true)
 procedure copy_char(var p: PWideChar; src: PCharInfo; _start, _end: SHORT; ret: BOOL = true);
 var
   pend, test, last: PCharInfo;
@@ -386,35 +387,30 @@ end;
 {$WRITEABLECONST OFF}
 
 //*----------*/
-
-procedure selectionToClipBoard(hwnd: HWND);
+procedure copyStringToClipboard(hWnd: HWND; const str: PWideChar);
 var
-  str: PWideChar;
-  _length: Integer;
-  hMem: THandle;
-  ptr: PWideChar;
-  _result: BOOL;
+  _length : Integer;
+	hMem: THandle;
+	ptr: PWideChar;
+	_result : BOOL;
 begin
-	if (not Assigned(gScreen)) or (not Assigned(gCSI)) then Exit;
-	//window_to_charpos(x, y);
-
-	str := selectionGetString();
-	if not Assigned(str) then Exit;
-
-  _length := Length(str) + 1;
+	_length := Length(str) +1;
 	_result := true;
 
 	hMem := GlobalAlloc(GMEM_MOVEABLE, sizeof(WideChar) * _length);
 	if not BOOL(hMem) then _result := false;
 
-  ptr := GlobalLock(hMem);
-	if (_result and   (not Assigned(ptr))) then
+  ptr := PWideChar(GlobalLock(hMem));
+	if _result and not Assigned(ptr) then
+  begin
 		_result := false;
-	if (_result) then
+  end;
+	if _result then
   begin
 		CopyMemory(ptr, str, sizeof(WideChar) * _length);
 		GlobalUnlock(hMem);
   end;
+
 	if (_result and (not OpenClipboard(hWnd))) then
   begin
 		Sleep(10);
@@ -430,10 +426,110 @@ begin
 	end;
 	if (not _result) and BOOL(hMem) then
 		GlobalFree(hMem);
-    
+end;
+
+//*----------*/
+procedure selectionToClipBoard(hwnd: HWND);
+var
+  str: PWideChar;
+begin
+	if (not Assigned(gScreen)) or (not Assigned(gCSI)) then Exit;
+
+	str := selectionGetString();
+	if not Assigned(str) then Exit;
+
+  copyStringToClipboard(hwnd, str);
+
 	FreeMem(str);
 end;
 
+//*----------*/
+// 전체 버퍼의 문자열 읽어내기. 
+function selectionGetAllString(): PWideChar;
+var
+  nb: Byte;
+  size: COORD;
+  work: PCharInfo;
+  buffer, wp: PWideChar;
+  pos: COORD;
+	sr: SMALL_RECT;
+  y: Integer;
+begin
+	nb := gCSI^.dwSize.X * gCSI^.dwSize.Y;
+
+	size.X := gCSI^.dwSize.X;
+  size.Y := 1;
+
+  GetMem(work, SizeOf(CHAR_INFO) * gCSI^.dwSize.X);
+  GetMem(buffer, SizeOf(WideChar) * nb);
+  wp := buffer;
+	pos.X := 0;
+  pos.Y := 0;
+  sr.Left := 0;
+  sr.Top  := 0;
+  sr.Right  := gCSI^.dwSize.X-1;
+  sr.Bottom := 0;
+
+	wp^ := #0;
+
+  for y := 0 to gCSI^.dwSize.Y - 1 do
+  begin
+		sr.Top    := y;
+    sr.Bottom := y;
+		ReadConsoleOutput_Unicode(gStdOut, work, size, pos, @sr);
+		copy_Char(wp, work, 0, gCSI^.dwSize.X-1 );
+  end;
+
+  FreeMem(work);
+  Result := buffer;
+end;
+
+//*----------*/
+// 전체 버퍼를 클립보드로.
+procedure copyAllStringToClipBoard(hwnd: HWND);
+var
+  str: PWideChar;
+  i, len, _start, _end: Integer;
+begin
+	if (not Assigned(gScreen)) or (not Assigned(gCSI)) then Exit;
+
+	str := selectionGetAllString();
+	if not Assigned(str) then Exit;
+
+  len := Length(str);
+
+  i := 0;
+  _start := i;
+  while i < len do
+  begin
+    _start := i;
+
+    if (str[i] <> #13) or ((i+1 < len) and (str[i+1] <> #10)) then
+      Break;
+    Inc(i, 2);
+  end;
+
+  i := len-1;
+  _end := i;
+  while i >= 0 do
+  begin
+    _end := i;
+
+    if (str[i] <> #10) or ((i-1 >= 0) and (str[i-1] <> #13)) then
+      Break;
+
+    Dec(i, 2);
+  end;
+
+  if _end+1 <> len then str[_end+1] := #0;
+
+  copyStringToClipboard(hwnd, @str[_start]);
+
+	FreeMem(str);
+end;
+
+
+//*----------*/
 procedure onLBtnUp(hWnd: HWND; x, y: Integer);
 begin
 	if (hWnd <> GetCapture()) then Exit;
@@ -479,7 +575,13 @@ end;
 initialization
   dkw_h.selectionGetArea := selectionGetArea;
   dkw_h.selectionClear   := selectionClear;
-  dkw_h.selectionToClipBoard := selectionToClipBoard;
+
+  dkw_h.selectionGetString    := selectionGetString;
+  dkw_h.selectionGetAllString := selectionGetAllString;
+  
+  dkw_h.copyStringToClipboard := copyStringToClipboard;
+  dkw_h.selectionToClipBoard  := selectionToClipBoard;
+  dkw_h.copyAllStringToClipBoard := copyAllStringToClipBoard;
 
   dkw_h.onLBtnDown:= onLBtnDown;
   dkw_h.onLBtnUp:= onLBtnUp;
