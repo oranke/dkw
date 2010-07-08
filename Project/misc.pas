@@ -9,6 +9,11 @@
   2010-07-02
     작업 시작.
 
+  2010-07-08
+    CopyAll 기능 추가.
+    ckw-0.8.10-mod4-20100517 에서 참고함.
+    http://sites.google.com/site/craftware/ckw/download
+
 -----------------------------------------------------------------------------}
 
 
@@ -31,7 +36,8 @@ const
   IDC_STATIC1	= 10001;
   IDC_EDIT1	= 10002;
 
-  IDM_ABOUT	= 40001;
+  IDM_ABOUT	  = 40001;
+  IDM_COPYALL	= 40002;
 
 
 procedure __write_console_input(str: PWideChar; length: DWORD);
@@ -97,6 +103,8 @@ begin
 	CloseClipboard();
   
 end;
+
+
 
 //*----------*/
 procedure onDropFile(hDrop: THandle);
@@ -192,20 +200,19 @@ procedure sysmenu_init(hWnd: HWND);
 var
 	mii: MENUITEMINFO;
 	hMenu : THandle;
-  AboutStr: String;
+  MenuStr: String;
 begin
 	hMenu := GetSystemMenu(hWnd, FALSE);
 
   FillChar(mii, SizeOf(MENUITEMINFO), 0);
 
-  AboutStr := 'About (&A)';
+  MenuStr := '&Copy All';
 	mii.cbSize := sizeof(mii);
 	mii.fMask := MIIM_TYPE or MIIM_ID;
-
 	mii.fType := MFT_STRING;
-	mii.wID := IDM_ABOUT;
-	mii.dwTypeData := PChar(AboutStr);
-	mii.cch := Length(AboutStr);
+	mii.wID := IDM_COPYALL;
+	mii.dwTypeData := PChar(MenuStr);
+	mii.cch := Length(MenuStr);
 	InsertMenuItem(hMenu, SC_CLOSE, FALSE, mii);
 
 	mii.fType := MFT_SEPARATOR;
@@ -213,6 +220,22 @@ begin
 	mii.dwTypeData := nil;
 	mii.cch := 0;
 	InsertMenuItem(hMenu, SC_CLOSE, FALSE, mii);
+
+  MenuStr := '&About';
+	mii.cbSize := sizeof(mii);
+	mii.fMask := MIIM_TYPE or MIIM_ID;
+	mii.fType := MFT_STRING;
+	mii.wID := IDM_ABOUT;
+	mii.dwTypeData := PChar(MenuStr);
+	mii.cch := Length(MenuStr);
+	InsertMenuItem(hMenu, SC_CLOSE, FALSE, mii);
+
+	mii.fType := MFT_SEPARATOR;
+	mii.wID := 0;
+	mii.dwTypeData := nil;
+	mii.cch := 0;
+	InsertMenuItem(hMenu, SC_CLOSE, FALSE, mii);
+  
 end;
 
 
@@ -221,10 +244,13 @@ function onSysCommand(hWnd: HWND; id: DWORD): BOOL;
 begin
   Result := false;
   case id of
+    IDM_COPYALL:
+    begin
+      copyAllStringToClipBoard(hwnd);
+    end;
+    
     IDM_ABOUT:
     begin
-      //WriteLn('어바웃');
-      
   		DialogBoxW(
         GetModuleHandle(nil),
         'IDD_DIALOG1',
