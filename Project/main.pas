@@ -25,7 +25,7 @@ procedure WinMain();
 implementation
 
 uses
-  {dialogs, }dkw_h, IMM, option;
+  dialogs, dkw_h, IMM, option;
 
 var
 {
@@ -1113,7 +1113,7 @@ begin
 		Inc(width, width1[i]);
 		Inc(width, width2[i]);
   end;
-  
+
 	width  := Width div (26 * 2);
 	gFontW := width; //* met.tmAveCharWidth; */
 	gFontH := DWORD(met.tmHeight) + gLineSpace;
@@ -1122,8 +1122,20 @@ begin
 end;
 
 //*----------*/
+// JCL 의 Hardlinks.pas 에서 "NtpGetProcessHeap" 함수를 참고함. 
+// http://www.koders.com/delphi/fid007F6DDAB2DC02A8F2B83EF53A28A90F7E03C6B2.aspx?s=thread
+// prupp 구조체는 ntapi.h 파일을 참조할 것.
+function Get_prupp(): Pointer;
+asm
+  // get PEB
+  MOV EAX, FS:[$30]
+  // get PRUPP (PRTL_USER_PROCESS_PARAMETERS)
+  MOV EAX, [EAX+$10]
+end;
+
 procedure __hide_alloc_console();
 var
+  param: PInteger;
   pflags: PDWORD;
   pshow: PWORD;
   backup_flags: DWORD;
@@ -1134,8 +1146,17 @@ begin
 	 * Open Console Window
 	 * hack StartupInfo.wShowWindow flag
 	 *}
-	pflags := PDWORD($00020068); //* private memory */
-	pshow  :=  PWORD($0002006C);
+
+  {
+    윈도 비스타와 7에서 제대로 동작하도록 수정.
+  }
+
+	//pflags := PDWORD($00020068); //* private memory */
+	//pshow  :=  PWORD($0002006C);
+
+  param := Get_prupp();
+  pflags := @PByteArray(param)^[$68];
+  pshow  := @PByteArray(param)^[$6C];
 
 	backup_flags := pflags^;
 	backup_show  := pshow^;
@@ -1155,6 +1176,7 @@ begin
 	pflags^ := backup_flags;
 	pshow^  := backup_show;
 end;
+
 
 //*----------*/
 function sig_handler(n: DWORD): BOOL; stdcall;
