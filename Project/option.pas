@@ -15,7 +15,9 @@
 
   2010-07-07
     Yes, No 값을 Boolean형으로 입출력하는 TMyINIFile 구현.   
-    
+
+  2010-07-08
+    모든 INI설정값을 파라미터로 받을 수 있도록 함.   
 
 -----------------------------------------------------------------------------}
 
@@ -61,6 +63,7 @@ type
     fFontSizeCtrlStep: Integer;
     fUseCtrl_C_Copy: BOOL;
     fUseCtrl_V_Paste: BOOL;
+    fSelectOverScreen: BOOL;
   private
   protected
   public
@@ -70,7 +73,7 @@ type
   	procedure loadXdefaults();
 {$IFDEF WriteINI}
     procedure saveXdefaults();
-{$ENDIF}    
+{$ENDIF}
     // argc, argv를 인자로 하는 set 함수 변경.
   	function setArgs(): BOOL;
   public
@@ -109,7 +112,8 @@ type
     property getFontSizeCtrlStep: Integer read fFontSizeCtrlStep;
     property getUseCtrl_C_Copy: bool read fUseCtrl_C_Copy;
     property getUseCtrl_V_Paste: bool read fUseCtrl_V_Paste;
-    
+    property getSelectOverScreen: bool read fSelectOverScreen;
+
   end;
 
 procedure WriteFontSize(const aFontSize: Integer);
@@ -117,7 +121,7 @@ procedure WriteFontSize(const aFontSize: Integer);
 implementation
 
 uses
-  {Dialogs, }INIFiles;
+  Dialogs, INIFiles;
 
   
 // http://www.cs.yorku.ca/~oz/hash.html 의 sdbm 방식.
@@ -958,18 +962,21 @@ begin
   WriteString(Section, Ident, GeometryStr);
 end;
 
-function TMyINIFile.ReadYesNo(const Section, Ident: String; Default: Boolean): Boolean;
-var
-  YesNoStr: String;
+function ReadYesNoStr(aYesNoStr: String; Default: Boolean): Boolean;
 begin
-  YesNoStr := UpperCase(ReadString(Section, Ident, ''));
-  if YesNoStr = 'YES' then
+  aYesNoStr:= LowerCase(aYesNoStr);
+  if aYesNoStr = 'yes' then
     Result := true
   else
-  if YesNoStr = 'NO' then
+  if aYesNoStr = 'no' then
     Result := false
   else
     Result := Default;
+end;
+
+function TMyINIFile.ReadYesNo(const Section, Ident: String; Default: Boolean): Boolean;
+begin
+  Result := ReadYesNoStr(ReadString(Section, Ident, ''), Default);
 end;
 
 function TMyINIFile.ReadColor(const Section, Ident: String;
@@ -983,28 +990,33 @@ begin
     Result := Default;
 end;
 
-function TMyINIFile.ReadGeometry(const Section, Ident: String; var cW, cH: Integer): Boolean;
+function ReadGeometryStr(aGeometryStr: String; var cW, cH: Integer): Boolean;
 var
-  GeometryStr: String;
   SaveCW, SaveCH, i: Integer;
 begin
-  Result := true;
-  GeometryStr := UpperCase(ReadString(Section, Ident, ''));
-  i := Pos('X', GeometryStr);
+  Result := false;
+  aGeometryStr := UpperCase(aGeometryStr);
+  i := Pos('X', aGeometryStr);
   if i <= 0 then Exit;
 
   SaveCW := cW;
   SaveCH := cH;
+
   try
-    cW := StrToInt(Copy(GeometryStr, 1, i-1));
-    cH := StrToInt(Copy(GeometryStr, i+1, Length(GeometryStr) -i));
+    cW := StrToInt(Copy(aGeometryStr, 1, i-1));
+    cH := StrToInt(Copy(aGeometryStr, i+1, Length(aGeometryStr) -i));
   except
     cW := SaveCW;
     cH := SaveCH;
     Exit;
   end;
-
+  
   Result := true;
+end;
+
+function TMyINIFile.ReadGeometry(const Section, Ident: String; var cW, cH: Integer): Boolean;
+begin
+  Result := ReadGeometryStr(ReadString(Section, Ident, ''), cW, cH);
 end;
 
 { TDkOpt }
@@ -1052,6 +1064,7 @@ begin
   fFontSizeCtrlStep := 2;
   fUseCtrl_C_Copy  := false;
   fUseCtrl_V_Paste := false;
+  fSelectOverScreen := false;
 end;
 
 destructor TDkOpt.Destroy;
@@ -1105,6 +1118,7 @@ begin
     fFontSizeCtrlStep := INIFile.ReadInteger(INISection, 'fontSizeCtrlStep', fFontSizeCtrlStep);
     fUseCtrl_C_Copy   := INIFile.ReadYesNo(INISection, 'UseCtrl_C_Copy', fUseCtrl_C_Copy);
     fUseCtrl_V_Paste  := INIFile.ReadYesNo(INISection, 'UseCtrl_V_Paste', fUseCtrl_V_Paste);
+    fSelectOverScreen := INIFile.ReadYesNo(INISection, 'SelectOverScreen', fSelectOverScreen);
 
 
     for i := Low(fColors) to High(fColors) do
@@ -1154,6 +1168,7 @@ begin
 
     INIFile.WriteYesNo(INISection, 'UseCtrl_C_Copy', fUseCtrl_C_Copy);
     INIFile.WriteYesNo(INISection, 'UseCtrl_V_Paste', fUseCtrl_V_Paste);
+    INIFile.WriteYesNo(INISection, 'SelectOverScreen', fSelectOverScreen);
 
     for i := Low(fColors) to High(fColors) do
       INIFile.WriteColor(INISection, 'color' + IntToStr(i), fColors[i]);
@@ -1165,8 +1180,83 @@ end;
 
 
 function TDkOpt.setArgs: BOOL;
+var
+  i, j: Integer;
+  str, name, value: AnsiString;
+
+  NameHash: LongWord;
 begin
+  //ShowMessage(IntToStr(ParamCount()));
+  //ShowMessage(ParamStr(0));
+
+  for i := 1 to ParamCount() do
+  begin
+    str := ParamStr(i);
+    j := Pos('=', str);
+    if j <= 0 then Continue;
+
+    name  := Copy(str, 1, j-1);
+    value := Copy(str, j+1, Length(str) -j);
+
+    NameHash := MemHash3(PChar(LowerCase(name)), Length(name));
+
+    case NameHash of
+      $DF292A83: LookupColor(value, fColorFg);        // foreground
+      $055DEA4E: LookupColor(value, fColorBg);        // background
+      $5F03534D: LookupColor(value, fColorCursor);    // cursorColor
+      $0D4A1B18: LookupColor(value, fColorCursorIme); // cursorImeColor
+      $4D080F9D: fBgBmp := value;                     // backgroundBitmap
+
+      $15F1CC38: fTitle := value; // title
+      $96ACB911: fCmd   := trim(value); // exec
+      $5CD4B3A8: fCurDir:= trim(value) ; // chdir
+
+      $E4BAAB2F: fScrollHide  := ReadYesNoStr(value, fScrollHide);  // scrollHide
+      $9DD8064F: fScrollRight := ReadYesNoStr(value, fScrollRight); // scrollRight
+      $EF7C2249: fBorderSize  := StrToIntDef(value, fBorderSize);   // internalBorder
+      $C563E2B2: fLineSpace   := StrToIntDef(value, fLineSpace);    // lineSpace
+      $669E8438: fIsTopMost   := ReadYesNoStr(value, fIsTopMost);   // topmost
+      $23113D88: fTransp      := StrToIntDef(value, fTransp);       // transp
+      $136992DB: LookupColor(value, fTranspColor); // transpColor
+      
+      $C0CE008F: fFont      := value; // font
+      $3E9551B0: fFontSize  := StrToIntDef(value, fFontSize);   // fontSize
+      $38B2B8D2: ReadGeometryStr(value, fWinCharW, fWinCharH);  // geometry
+      $092476A2: fSaveLines := StrToIntDef(value, fSaveLines);  // saveLines
+
+      $3DD97E7B: fFontSizeCtrl     := ReadYesNoStr(value, fFontSizeCtrl);     // fontSizeCtrl
+      $DE410907: fFontSizeCtrlStep := StrToIntDef(value, fFontSizeCtrlStep);  // fontSizeCtrlStep
+      $ADF60C7E: fUseCtrl_C_Copy   := ReadYesNoStr(value, fUseCtrl_C_Copy);   // UseCtrl_C_Copy
+      $AA515CDD: fUseCtrl_V_Paste  := ReadYesNoStr(value, fUseCtrl_V_Paste);  // UseCtrl_V_Paste
+      $1A67F87C: fSelectOverScreen := ReadYesNoStr(value, fSelectOverScreen); // SelectOverScreen
+
+      $DEA1B28D: LookupColor(value, fcolors[0]); // color0
+      $DEA1B28E: LookupColor(value, fcolors[1]); // color1
+      $DEA1B28F: LookupColor(value, fcolors[2]); // color2
+      $DEA1B290: LookupColor(value, fcolors[3]); // color3
+      $DEA1B291: LookupColor(value, fcolors[4]); // color4
+      $DEA1B292: LookupColor(value, fcolors[5]); // color5
+      $DEA1B293: LookupColor(value, fcolors[6]); // color6
+      $DEA1B294: LookupColor(value, fcolors[7]); // color7
+
+      $DEA1B295: LookupColor(value, fcolors[8]); // color8
+      $DEA1B296: LookupColor(value, fcolors[9]); // color9
+      $7C58F122: LookupColor(value, fcolors[10]); // color10
+      $7C58F123: LookupColor(value, fcolors[11]); // color11
+      $7C58F124: LookupColor(value, fcolors[12]); // color12
+      $7C58F125: LookupColor(value, fcolors[13]); // color13
+      $7C58F126: LookupColor(value, fcolors[14]); // color14
+      $7C58F127: LookupColor(value, fcolors[15]); // color15
+    end;
+    //ShowMessage(str + ', ' + name + ': ' + value);
+  end;
+
+
+
+
   Result := true;
+
+  
 end;
 
 function TDkOpt.getColor(i: Integer): COLORREF;
