@@ -545,6 +545,7 @@ procedure onMouseMove(hWnd: HWND; x, y: Integer);
 var
   bak: SMALL_RECT;
 begin
+  //writeln(x, ', ', y);
 	if (hWnd <> GetCapture()) then Exit;
 	if (not Assigned(gScreen)) or (not Assigned(gCSI)) then Exit;
 	window_to_charpos(x, y);
