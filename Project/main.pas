@@ -9,6 +9,11 @@
   2010-07-01
     작업 시작.
 
+  2010-07-08
+    윈도7, 비스타에서 초기구동시 나타나는 작은 콘솔창 오류 수정.
+    gSelectOverScreen 옵션 추가. 
+
+      
 -----------------------------------------------------------------------------}
 
 {$DEFINE HideConsole}
@@ -63,6 +68,7 @@ var
 
   gFontSizeCtrl : BOOL;
   gFontSizeCtrlStep: Integer;
+  gSelectOverScreen: BOOL = true;
 
 
 const
@@ -722,7 +728,8 @@ var
   imc: THandle;
   sb: WPARAM;
 
-  //fw, fh, width, height: LongInt;
+  x, y: Short;
+  rc: TRect;
 begin
   Result := 1;
 
@@ -764,7 +771,24 @@ begin
 
 	  WM_LBUTTONUP: onLBtnUp(hWnd, short(LOWORD(lp)), short(HIWORD(lp)));
 
-  	WM_MOUSEMOVE: onMouseMove(hWnd, short(LOWORD(lp)), short(HIWORD(lp)));
+  	WM_MOUSEMOVE:
+    begin
+      onMouseMove(hWnd, short(LOWORD(lp)), short(HIWORD(lp)));
+
+      if gSelectOverScreen then
+      begin
+        x := Short(LOWORD(lp));
+        y := Short(HIWORD(lp));
+        GetClientRect(hWnd, rc);
+
+        if ( y < 0 ) then
+          PostMessage(gConWnd, WM_MOUSEWHEEL, WHEEL_DELTA shl 16, (y shl 16) or x )
+        else
+        if (y >= rc.bottom) then
+          PostMessage(gConWnd, WM_MOUSEWHEEL, -WHEEL_DELTA shl 16, (y shl 16) or x );
+
+      end;
+    end;
 
 	  WM_MBUTTONDOWN,
 	  WM_RBUTTONDOWN: onPasteFromClipboard(hWnd);
@@ -1327,6 +1351,7 @@ begin
   gFontSizeCtrlStep := opt.getFontSizeCtrlStep;
   gUseCtrl_C_Copy   := opt.getUseCtrl_C_Copy;
   gUseCtrl_V_Paste  := opt.getUseCtrl_V_Paste;
+  gSelectOverScreen := opt.getSelectOverScreen;
 
 	if Length(opt.getBgBmp) <> 0 then
 		gBgBmp := LoadImageA(0, PAnsiChar(opt.getBgBmp), IMAGE_BITMAP, 0,0, LR_LOADFROMFILE);
