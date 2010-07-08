@@ -50,7 +50,12 @@ var
   selectionGetArea: function (var sr: SMALL_RECT): BOOL;
   selectionClear: procedure (hWnd: HWND);
 
-  selectionToClipBoard: procedure(hwnd: HWND);
+  selectionGetString: function (): PWideChar;
+  selectionGetAllString: function (): PWideChar;
+
+  copyStringToClipboard: procedure (hWnd: HWND; const str: PWideChar);
+  selectionToClipBoard: procedure (hwnd: HWND);
+  copyAllStringToClipBoard: procedure (hwnd: HWND);
 
   onLBtnDown: procedure (hWnd: HWND; x, y: Integer);
   onLBtnUp: procedure (hWnd: HWND; x, y: Integer);
