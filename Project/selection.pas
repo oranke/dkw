@@ -7,7 +7,7 @@
   
  History:
   2010-07-08
-    copyStringToClipboard 함수 추가. 
+    copyStringToClipboard, copyAllStringToClipBoard 함수 추가. 
 
 -----------------------------------------------------------------------------}
 
