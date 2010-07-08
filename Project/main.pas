@@ -11,7 +11,10 @@
 
   2010-07-08
     윈도7, 비스타에서 초기구동시 나타나는 작은 콘솔창 오류 수정.
-    gSelectOverScreen 옵션 추가. 
+    gSelectOverScreen 옵션 추가.
+
+    __draw_screen 에서 불필요한 work_width 를 사용하지 않도록
+    BlockWorkWidth 지시자 추가.  
 
       
 -----------------------------------------------------------------------------}
@@ -30,7 +33,7 @@ procedure WinMain();
 implementation
 
 uses
-  dialogs, dkw_h, IMM, option;
+  {dialogs, }dkw_h, IMM, option;
 
 var
 {
@@ -137,7 +140,9 @@ begin
 
 	if not ReadConsoleOutputA(con, buffer, size, pos, sr^) then Exit;
 
+  // 시작버퍼 설정.
   s := buffer;
+  // 끝버퍼 설정. 
   e := buffer;
   Inc(e, size.X * size.Y);
 
@@ -265,6 +270,7 @@ begin
 end;
 
 //*----------*/
+{$DEFINE BlockWorkWidth}
 procedure __draw_screen(hDC: THandle);
 var
 	pntX, pntY,
@@ -276,24 +282,29 @@ var
 	work_color_bg: Integer;
 	work_text,
 	work_text_ptr: PWideChar;
+	work_pntX: Integer;
+{$IFNDEF BlockWorkWidth}
 	work_width: PInteger;
 	work_width_ptr: PInteger;
-	work_pntX: Integer;
+{$ENDIF}  
 
 begin
 	ptr := gScreen;
 	work_color_fg := -1;
 	work_color_bg := -1;
   GetMem(work_text, SizeOf(WideChar) * CSI_WndCols(gCSI));
+{$IFNDEF BlockWorkWidth}
   GetMem(work_width, SizeOf(Integer) * CSI_WndCols(gCSI));
-
+{$ENDIF}
 	pntY := 0;
 	for y := gCSI^.srWindow.Top to gCSI^.srWindow.Bottom do
   begin
 		pntX := 0;
 		work_pntX := 0;
 		work_text_ptr := work_text;
+{$IFNDEF BlockWorkWidth}
 		work_width_ptr := work_width;
+{$ENDIF}    
 		for x := gCSI^.srWindow.Left to gCSI^.srWindow.Right do
     begin
 			if BOOL(ptr^.Attributes and COMMON_LVB_TRAILING_BYTE) then
@@ -310,16 +321,23 @@ begin
 			   (color_bg <> work_color_bg) then
       begin
 				if (work_text_ptr > work_text) then
+				//if DWORD(work_text_ptr) > DWORD(work_text) then
         begin
 					ExtTextOutW(hDC, work_pntX, pntY, 0, nil,
 						work_text,
 						work_text_ptr - work_text,
+        {$IFNDEF BlockWorkWidth}
 						work_width
+        {$ELSE}
+            nil
+        {$ENDIF}
           );
         end;
 
 				work_text_ptr := work_text;
+{$IFNDEF BlockWorkWidth}
 				work_width_ptr := work_width;
+{$ENDIF}        
 				work_pntX := pntX;
 				work_color_fg := color_fg;
 				work_color_bg := color_bg;
@@ -335,15 +353,18 @@ begin
       begin
         work_text_ptr^ := ptr^.UnicodeChar;
         Inc(work_text_ptr);
-
+{$IFNDEF BlockWorkWidth}
 				work_width_ptr^ := gFontW * 2;
         Inc(work_width_ptr);
+{$ENDIF}
       end else
       begin
 				work_text_ptr^ := ptr^.UnicodeChar;
         Inc(work_text_ptr);
+{$IFNDEF BlockWorkWidth}
 				work_width_ptr^ := gFontW;
         Inc(work_width_ptr);
+{$ENDIF}        
       end;
 
 			Inc(pntX, gFontW);
@@ -351,11 +372,18 @@ begin
     end;
 
 		if (work_text_ptr > work_text) then
+		//if DWORD(work_text_ptr) > DWORD(work_text) then
+    begin
 			ExtTextOutW(hDC, work_pntX, pntY, 0, nil,
 				work_text,
 				work_text_ptr - work_text,
+    {$IFNDEF BlockWorkWidth}
 				work_width
+    {$ELSE}
+        nil
+    {$ENDIF}
       );
+    end;
 
 		Inc(pntY, gFontH);
 
@@ -388,17 +416,27 @@ begin
 		Inc(ptr, CSI_WndCols(gCSI) * pntY + pntX);
 		pntX := pntX * Integer(gFontW);
 		pntY := pntY * Integer(gFontH);
+
+{$IFNDEF BlockWorkWidth}
     if BOOL(ptr^.Attributes and COMMON_LVB_LEADING_BYTE) then
   		work_width^ :=  gFontW*2
     else
      work_width^ :=  gFontW;
-     
+{$ENDIF}
+
 		ExtTextOutW(hDC, pntX, pntY, 0, nil,
-			@ptr^.UnicodeChar, 1, work_width
+			@ptr^.UnicodeChar, 1,
+{$IFNDEF BlockWorkWidth}
+      work_width
+{$ELSE}
+      nil
+{$ENDIF}
     );
   end;
 
+{$IFNDEF BlockWorkWidth}
 	FreeMem(work_width);
+{$ENDIF}  
 	FreeMem(work_text);
 end;
 
@@ -834,10 +872,20 @@ begin
       Exit;
     end;
 
-	  WM_VSCROLL,
+	  WM_VSCROLL: PostMessageW(gConWnd, msg, wp, lp);
+
 	  WM_MOUSEWHEEL:
+    begin
+      if gFontSizeCtrl and BOOL(LOWORD(wp) and MK_CONTROL) then
+      begin
+        ResizeFont(
+          hwnd,
+          gFontSizeCtrlStep * Short(HIWORD(wp)) div ABS(Short(HIWORD(wp)))
+        );
+      end;
       //* throw console window */
       PostMessageW(gConWnd, msg, wp, lp);
+    end;
 
 	  WM_SYSKEYDOWN,
 	  WM_SYSKEYUP:
@@ -1035,6 +1083,7 @@ begin
 end;
 
 //*----------*/
+// todo: 유니코드 기준으로 변경할 것. 
 function create_child_process(cmd, curdir: string): BOOL;
 var
   buf: PChar;
