@@ -113,7 +113,7 @@ var
   wbuf: array [0..MAX_PATH+32-1] of WideChar;
   wp: PWideChar;
 begin
-	nb := DragQueryFile(hDrop, DWORD(-1), nil, 0);
+	nb := DragQueryFileW(hDrop, DWORD(-1), nil, 0);
 
   for i := 0 to nb - 1 do
   begin
