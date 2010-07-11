@@ -19,6 +19,9 @@
   2010-07-08
     모든 INI설정값을 파라미터로 받을 수 있도록 함.   
 
+  2010-07-12
+    투명도 조절관련 옵션 추가.
+      
 -----------------------------------------------------------------------------}
 
 {.$DEFINE WriteINI}
@@ -52,6 +55,8 @@ type
     fSaveLines: integer;
     fIsTopMost: bool;
     fTranspColor: COLORREF;
+    fTranspCtrl: bool;
+    fTranspCtrlStep: Integer;
     fIsTranspColor: bool;
     fFontSize: Integer;
     fFont: String;
@@ -97,6 +102,9 @@ type
     property getTransp		  : integer	read fTransp;
     property isTranspColor	: bool		read fIsTranspColor;
     property getTranspColor	: COLORREF read fTranspColor;
+    property getTranspCtrl  : bool read fTranspCtrl;
+    property getTranspCtrlStep: Integer read fTranspCtrlStep;
+
     property isTopMost		  : bool		read fIsTopMost;
 
     property getCmd: String read fCmd;
@@ -121,7 +129,7 @@ procedure WriteFontSize(const aFontSize: Integer);
 implementation
 
 uses
-  Dialogs, INIFiles;
+  {Dialogs, }INIFiles;
 
   
 // http://www.cs.yorku.ca/~oz/hash.html 의 sdbm 방식.
@@ -1056,6 +1064,9 @@ begin
 	fborderSize := 1;
 	flineSpace := 0;
 	ftransp := 255;
+  fTranspCtrl:= true;
+  fTranspCtrlStep:= 10;
+
 	fisTranspColor := false;
 	ftranspColor := 0;
 	fisTopMost := false;

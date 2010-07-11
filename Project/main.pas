@@ -16,7 +16,9 @@
     __draw_screen 에서 불필요한 work_width 를 사용하지 않도록
     BlockWorkWidth 지시자 추가.  
 
-      
+  2010-07-11
+    알트와 휠, 또는 알트와 +/- 키로 투명도 조절할 수 있게 함.
+    
 -----------------------------------------------------------------------------}
 
 {$DEFINE HideConsole}
@@ -71,6 +73,12 @@ var
 
   gFontSizeCtrl : BOOL;
   gFontSizeCtrlStep: Integer;
+
+  gIsTranspColor: BOOL;
+  gTransp: Integer;
+  gTranspCtrl : BOOL;
+  gTranspCtrlStep: Integer;
+  
   gSelectOverScreen: BOOL = true;
 
 
@@ -761,7 +769,40 @@ begin
   WriteFontSize(-gFontLog.lfHeight);
 end;
 
+// 투명도 조절.
+procedure ResetAlpha(hwnd: HWND; const aValue: Integer);
+var
+  NewTransp: Integer;
+begin
+  if gIsTranspColor then Exit;
+  if not gTranspCtrl then Exit;
+
+  NewTransp := gTransp + aValue;
+
+  if NewTransp > 255 then NewTransp := 255;
+  if NewTransp < 0 then NewTransp := 0;
+
+  if NewTransp = gTransp then Exit;
+
+  gTransp := NewTransp;
+
+  if gTransp in [1..254] then
+  begin
+    SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) or WS_EX_LAYERED);
+		SetLayeredWindowAttributes(hWnd, 0, gTransp, LWA_ALPHA)
+  end else
+  begin
+    SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) and not WS_EX_LAYERED);
+  end;
+
+  //if NewTra then
+  
+  //NewTransp
+end;
+
 function WndProc(hWnd: HWND; msg: UINT; wp: WPARAM; lp: LPARAM): LRESULT; stdcall;
+const
+  AltMask = $20000000;
 var
   imc: THandle;
   sb: WPARAM;
@@ -882,27 +923,44 @@ begin
           hwnd,
           gFontSizeCtrlStep * Short(HIWORD(wp)) div ABS(Short(HIWORD(wp)))
         );
-      end;
-      //* throw console window */
-      PostMessageW(gConWnd, msg, wp, lp);
+      end else
+      if (not gIsTranspColor) and gTranspCtrl and BOOL(GetKeyState(VK_MENU) and $8000) then
+      begin
+        ResetAlpha(
+          hwnd,
+          gTranspCtrlStep * Short(HIWORD(wp)) div ABS(Short(HIWORD(wp))) 
+        );
+      end else
+        //* throw console window */
+        PostMessageW(gConWnd, msg, wp, lp);
     end;
 
 	  WM_SYSKEYDOWN,
 	  WM_SYSKEYUP:
-		if (wp <> VK_RETURN) then //* alt+enter */
+    // 알파 재설정
+    if (msg = WM_SYSKEYDOWN) and (wp=VK_ADD) and BOOL(lp and AltMask) then
+    begin
+      ResetAlpha(hwnd, gTranspCtrlStep);
+    end else
+    if (msg = WM_SYSKEYDOWN) and (wp=VK_SUBTRACT) and BOOL(lp and AltMask) then
+    begin
+      ResetAlpha(hwnd, -gTranspCtrlStep);
+    end else
+    //* alt+enter */
+		if (wp <> VK_RETURN) then
 			PostMessageW(gConWnd, msg, wp, lp);
 
 	  WM_KEYDOWN,
 	  WM_KEYUP:
-
     if gUseCtrl_C_Copy and (msg = WM_KEYDOWN) and (wp=ord('C')) and BOOL(GetKeyState(VK_CONTROL) and $8000) then
     begin
-      selectionToClipBoard(hwnd);    
+      selectionToClipBoard(hwnd);
     end else
     if gUseCtrl_V_Paste and (msg = WM_KEYDOWN) and (wp=ord('V')) and BOOL(GetKeyState(VK_CONTROL) and $8000) then
     begin
       onPasteFromClipboard(hWnd);
     end else
+    // 폰트 리사이즈.
     if (msg = WM_KEYDOWN) and (wp=VK_ADD) and BOOL(GetKeyState(VK_CONTROL) and $8000) then
     begin
       ResizeFont(hwnd, gFontSizeCtrlStep);
@@ -911,6 +969,7 @@ begin
     begin
       ResizeFont(hwnd, -gFontSizeCtrlStep);
     end else
+
 		if ((wp = VK_NEXT) or (wp = VK_PRIOR) or
   	    (wp = VK_HOME) or (wp = VK_END)) and
 		   BOOL(GetKeyState(VK_SHIFT) and $8000) then
@@ -1398,6 +1457,12 @@ begin
 
   gFontSizeCtrl     := opt.getFontSizeCtrl;
   gFontSizeCtrlStep := opt.getFontSizeCtrlStep;
+
+  gIsTranspColor  := opt.isTranspColor;
+  gTransp         := opt.getTransp;
+  gTranspCtrl     := opt.getTranspCtrl;
+  gTranspCtrlStep := opt.getTranspCtrlStep;
+
   gUseCtrl_C_Copy   := opt.getUseCtrl_C_Copy;
   gUseCtrl_V_Paste  := opt.getUseCtrl_V_Paste;
   gSelectOverScreen := opt.getSelectOverScreen;
