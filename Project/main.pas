@@ -795,9 +795,8 @@ begin
     SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) and not WS_EX_LAYERED);
   end;
 
-  //if NewTra then
-  
-  //NewTransp
+  WriteTransp(gTransp);
+
 end;
 
 function WndProc(hWnd: HWND; msg: UINT; wp: WPARAM; lp: LPARAM): LRESULT; stdcall;

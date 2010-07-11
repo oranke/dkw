@@ -125,6 +125,7 @@ type
   end;
 
 procedure WriteFontSize(const aFontSize: Integer);
+procedure WriteTransp(const aTransp: Integer);
 
 implementation
 
@@ -1118,6 +1119,8 @@ begin
     fLineSpace   := INIFile.ReadInteger(INISection, 'lineSpace', fLineSpace);
     fIsTopMost   := INIFile.ReadYesNo(INISection, 'topmost', fIsTopMost);
     fTransp      := INIFile.ReadInteger(INISection, 'transp', fTransp);
+    fTranspCtrl  := INIFile.ReadYesNo(INISection, 'transpCtrl', fTranspCtrl);
+    fTranspCtrlStep := INIFile.ReadInteger(INISection, 'transpCtrlStep', fTranspCtrlStep);
     fTranspColor := INIFile.ReadColor(INISection, 'transpColor', fTranspColor);
 
     fFont        := INIFile.ReadString(INISection, 'font', fFont);
@@ -1289,6 +1292,21 @@ begin
   INIFile:= TMyINIFile.Create(ININame);
   try
     INIFile.WriteInteger(INISection, 'fontSize', aFontSize);
+  finally
+    INIFile.Free;
+  end;
+end;
+
+procedure WriteTransp(const aTransp: Integer);
+var
+  ININame: String;
+  INIFile: TMyINIFile;
+begin
+  ININame := ExtractFilePath(ParamStr(0)) + ExtractJustName(ParamStr(0)) + '.ini';
+
+  INIFile:= TMyINIFile.Create(ININame);
+  try
+    INIFile.WriteInteger(INISection, 'transp', aTransp);
   finally
     INIFile.Free;
   end;
