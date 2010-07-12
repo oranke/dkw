@@ -21,7 +21,10 @@
 
   2010-07-12
     투명도 조절관련 옵션 추가.
-      
+    폰트 강조색을 굵게 표현하는 옵션 추가. fontBoldColor=yes
+
+
+
 -----------------------------------------------------------------------------}
 
 {.$DEFINE WriteINI}
@@ -66,6 +69,7 @@ type
     fCurDir: string;
     fFontSizeCtrl: BOOL;
     fFontSizeCtrlStep: Integer;
+    fFontBoldColor: BOOL;
     fUseCtrl_C_Copy: BOOL;
     fUseCtrl_V_Paste: BOOL;
     fSelectOverScreen: BOOL;
@@ -118,6 +122,7 @@ type
 
     property getFontSizeCtrl: bool read fFontSizeCtrl;
     property getFontSizeCtrlStep: Integer read fFontSizeCtrlStep;
+    property getFontBoldColor: bool read fFontBoldColor;
     property getUseCtrl_C_Copy: bool read fUseCtrl_C_Copy;
     property getUseCtrl_V_Paste: bool read fUseCtrl_V_Paste;
     property getSelectOverScreen: bool read fSelectOverScreen;
@@ -1074,6 +1079,7 @@ begin
 
   fFontSizeCtrl := true;
   fFontSizeCtrlStep := 2;
+  fFontBoldColor   := false;
   fUseCtrl_C_Copy  := false;
   fUseCtrl_V_Paste := false;
   fSelectOverScreen := false;
@@ -1130,6 +1136,7 @@ begin
 
     fFontSizeCtrl     := INIFile.ReadYesNo(INISection, 'fontSizeCtrl', fFontSizeCtrl);
     fFontSizeCtrlStep := INIFile.ReadInteger(INISection, 'fontSizeCtrlStep', fFontSizeCtrlStep);
+    ffontBoldColor    := INIFile.ReadYesNo(INISection, 'fontBoldColor', ffontBoldColor);
     fUseCtrl_C_Copy   := INIFile.ReadYesNo(INISection, 'UseCtrl_C_Copy', fUseCtrl_C_Copy);
     fUseCtrl_V_Paste  := INIFile.ReadYesNo(INISection, 'UseCtrl_V_Paste', fUseCtrl_V_Paste);
     fSelectOverScreen := INIFile.ReadYesNo(INISection, 'SelectOverScreen', fSelectOverScreen);

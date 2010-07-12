@@ -18,6 +18,7 @@
 
   2010-07-11
     알트와 휠, 또는 알트와 +/- 키로 투명도 조절할 수 있게 함.
+    폰트 강조색을 굵게 표현하는 옵션 추가. fontBoldColor=yes
     
 -----------------------------------------------------------------------------}
 
@@ -73,6 +74,7 @@ var
 
   gFontSizeCtrl : BOOL;
   gFontSizeCtrlStep: Integer;
+  gFontBoldColor : BOOL;
 
   gIsTranspColor: BOOL;
   gTransp: Integer;
@@ -340,6 +342,20 @@ begin
             nil
         {$ENDIF}
           );
+
+          //if BOOL(ptr^.Attributes and FOREGROUND_INTENSITY) then
+          if gFontBoldColor then
+					ExtTextOutW(hDC, work_pntX+1, pntY, 0, nil,
+						work_text,
+						work_text_ptr - work_text,
+        {$IFNDEF BlockWorkWidth}
+						work_width
+        {$ELSE}
+            nil
+        {$ENDIF}
+          );
+          (**)
+
         end;
 
 				work_text_ptr := work_text;
@@ -391,6 +407,19 @@ begin
         nil
     {$ENDIF}
       );
+
+      (*
+      if work_color_fg <> -1 then
+      ExtTextOutW(hDC, work_pntX+1, pntY, 0, nil,
+        work_text,
+        work_text_ptr - work_text,
+    {$IFNDEF BlockWorkWidth}
+        work_width
+    {$ELSE}
+        nil
+    {$ENDIF}
+      );
+      *)
     end;
 
 		Inc(pntY, gFontH);
@@ -780,7 +809,7 @@ begin
   NewTransp := gTransp + aValue;
 
   if NewTransp > 255 then NewTransp := 255;
-  if NewTransp < 0 then NewTransp := 0;
+  if NewTransp < 50 then NewTransp := 50;
 
   if NewTransp = gTransp then Exit;
 
@@ -1456,6 +1485,7 @@ begin
 
   gFontSizeCtrl     := opt.getFontSizeCtrl;
   gFontSizeCtrlStep := opt.getFontSizeCtrlStep;
+  gFontBoldColor    := opt.getFontBoldColor;
 
   gIsTranspColor  := opt.isTranspColor;
   gTransp         := opt.getTransp;
