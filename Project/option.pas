@@ -7,27 +7,29 @@
     ckOpt 클래스를 번역한 TDkOpt 객체 구현.
 
     실행파일명과 동일하면서 확장자가 opt 인 파일에서 정보 읽음.
-    --> 그냥 INI를 사용하는 게 낫겠다. 
+    --> 그냥 INI를 사용하는 게 낫겠다.
 
  History:
   2010-07-02
     제작 시작. 몸통에서 쓰일 수 있도록 기본 리턴값만 구현.
 
   2010-07-07
-    Yes, No 값을 Boolean형으로 입출력하는 TMyINIFile 구현.   
+    Yes, No 값을 Boolean형으로 입출력하는 TMyINIFile 구현.
 
   2010-07-08
-    모든 INI설정값을 파라미터로 받을 수 있도록 함.   
+    모든 INI설정값을 파라미터로 받을 수 있도록 함.
 
   2010-07-12
     투명도 조절관련 옵션 추가.
     폰트 강조색을 굵게 표현하는 옵션 추가. fontBoldColor=yes
 
+  2011-02-10
+    위치 설정 옵션 추가.
 
 
 -----------------------------------------------------------------------------}
 
-{.$DEFINE WriteINI}
+{$DEFINE WriteINI}
 
 unit option;
 
@@ -39,7 +41,7 @@ uses
 type
   TDkOpt = class
   private
-    fIsWinPos: bool;
+    fRecordWinPos: bool;
     fWinPosX: integer;
     fWinPosY: integer;
     fWinCharW: integer;
@@ -86,7 +88,7 @@ type
     // argc, argv를 인자로 하는 set 함수 변경.
   	function setArgs(): BOOL;
   public
-	  property isWinPos	  :	bool	read fIsWinPos;
+	  property RecordWinPos	:	bool	read fRecordWinPos;
   	property getWinPosX	:	integer	read fWinPosX;
 	  property getWinPosY	:	integer	read fWinPosY;
     property getWinCharW:	integer	read fWinCharW;
@@ -131,6 +133,8 @@ type
 
 procedure WriteFontSize(const aFontSize: Integer);
 procedure WriteTransp(const aTransp: Integer);
+
+procedure RecordWinPosProc(const aHandle: THandle);
 
 implementation
 
@@ -1037,7 +1041,7 @@ end;
 
 constructor TDkOpt.Create;
 begin
-	fisWinPos := false;
+	fRecordWinPos := false;
 	fwinPosX := 0;
 	fwinPosY := 0;
 	fwinCharW := 80;
@@ -1109,6 +1113,13 @@ begin
 
   INIFile:= TMyINIFile.Create(ININame);
   try
+    fRecordWinPos   := INIFile.ReadYesNo(INISection, 'RecordWinPos', fRecordWinPos);
+    if fRecordWinPos then
+    begin
+      fWinPosX    := INIFile.ReadInteger(INISection, 'WinPosX', fWinPosX);
+      fWinPosY    := INIFile.ReadInteger(INISection, 'WinPosY', fWinPosY);
+    end;
+
     fColorFg        := INIFile.ReadColor(INISection, 'foreground', fColorFg);
     fColorBg        := INIFile.ReadColor(INISection, 'background', fColorBg);
     fColorCursor    := INIFile.ReadColor(INISection, 'cursorColor', fColorCursor);
@@ -1150,6 +1161,7 @@ begin
 
 end;
 
+
 {$IFDEF WriteINI}
 procedure TDkOpt.SaveXdefaults;
 var
@@ -1161,6 +1173,13 @@ begin
 
   INIFile:= TMyINIFile.Create(ININame);
   try
+    INIFile.WriteYesNo(INISection, 'RecordWinPos', fRecordWinPos);
+    if fRecordWinPos then
+    begin
+      INIFile.WriteInteger(INISection, 'WinPosX', fWinPosX);
+      INIFile.WriteInteger(INISection, 'WinPosY', fWinPosY);
+    end;
+
     INIFile.WriteColor(INISection, 'foreground', fColorFg);
     INIFile.WriteColor(INISection, 'background', fColorBg);
     INIFile.WriteColor(INISection, 'cursorColor', fColorCursor);
@@ -1197,7 +1216,7 @@ begin
     INIFile.Free;
   end;
 end;
-{$ENDIF}
+{$ENDIF of WriteINI}
 
 
 function TDkOpt.setArgs: BOOL;
@@ -1239,7 +1258,7 @@ begin
       $669E8438: fIsTopMost   := ReadYesNoStr(value, fIsTopMost);   // topmost
       $23113D88: fTransp      := StrToIntDef(value, fTransp);       // transp
       $136992DB: LookupColor(value, fTranspColor); // transpColor
-      
+
       $C0CE008F: fFont      := value; // font
       $3E9551B0: fFontSize  := StrToIntDef(value, fFontSize);   // fontSize
       $38B2B8D2: ReadGeometryStr(value, fWinCharW, fWinCharH);  // geometry
@@ -1277,7 +1296,7 @@ begin
 
   Result := true;
 
-  
+
 end;
 
 function TDkOpt.getColor(i: Integer): COLORREF;
@@ -1317,6 +1336,33 @@ begin
   finally
     INIFile.Free;
   end;
+end;
+
+procedure RecordWinPosProc(const aHandle: THandle);
+var
+  ININame: String;
+  INIFile: TMyINIFile;
+  RecordWinPos: Boolean;
+  Rt: TRect; 
+begin
+  ININame := ExtractFilePath(ParamStr(0)) + ExtractJustName(ParamStr(0)) + '.ini';
+
+  INIFile:= TMyINIFile.Create(ININame);
+  try
+    RecordWinPos := INIFile.ReadYesNo(INISection, 'RecordWinPos', false);
+    if RecordWinPos then
+    begin
+      GetWindowRect(aHandle, Rt);
+      
+      INIFile.WriteInteger(INISection, 'WinPosX', Rt.Left);
+      INIFile.WriteInteger(INISection, 'WinPosY', Rt.Top);
+
+    end;
+
+  finally
+    INIFile.Free;
+  end;
+
 end;
 
 initialization

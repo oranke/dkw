@@ -80,9 +80,10 @@ var
   gTransp: Integer;
   gTranspCtrl : BOOL;
   gTranspCtrlStep: Integer;
-  
+
   gSelectOverScreen: BOOL = true;
 
+  //gRecordWindowPos: BOOL = false;
 
 const
   //* setConsoleFont */
@@ -852,6 +853,8 @@ begin
 
     WM_DESTROY:
     begin
+      RecordWinPosProc(hWnd);
+
 		  KillTimer(hWnd, $3571);
   		PostQuitMessage(0);
   		if (WaitForSingleObject(gChild, 0) = WAIT_TIMEOUT) then
@@ -1103,8 +1106,10 @@ begin
 	Inc(width, gFrame.right  - gFrame.left);
 	Inc(height, gFrame.bottom - gFrame.top);
 
-	if opt.isWinPos then
+	if opt.RecordWinPos then
   begin
+    //gRecordWindowPos := true;
+    
 		SystemParametersInfo(SPI_GETWORKAREA,0, @rc,0);
 		posx := opt.getWinPosX;
 		if (posx < 0) then
@@ -1510,19 +1515,17 @@ end;
 function initialize(): BOOL;
 var
 	opt: TDkOpt;
-
 begin
   Result := false;
 
 	opt:= TDkOpt.Create;
   try
-
     if not init_options(opt) then Exit;
     if not create_console(opt) then Exit;
     if not create_font(opt.getFont, opt.getFontSize) then Exit;
-    if not create_child_process(opt.getCmd, opt.getCurDir) then Exit; 
+    if not create_child_process(opt.getCmd, opt.getCurDir) then Exit;
     if not create_window(opt) then Exit;
-    
+
   finally
     opt.Free;
   end;
