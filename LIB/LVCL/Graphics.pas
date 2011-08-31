@@ -109,6 +109,7 @@ type
    procedure MoveTo(x,y: integer);
    procedure LineTo(x,y: integer);
    procedure Rectangle(x1,y1,x2,y2: integer);
+   procedure Ellipse(x1, y1, x2, y2: Integer);
    procedure FrameRect(const Rect: TRect; cl1,cl2: integer);
    procedure PrepareText;
    procedure TextOut(x,y: integer; const s: string);
@@ -276,6 +277,12 @@ procedure TCanvas.Rectangle(x1,y1,x2,y2: integer);
 begin
   Pen.Select(fHandle);
   Windows.Rectangle(fHandle,x1,y1,x2,y2);
+end;
+
+procedure TCanvas.Ellipse(x1, y1, x2, y2: Integer);
+begin
+  Pen.Select(fHandle);
+  Windows.Ellipse(fHandle, x1, y1, x2, y2);
 end;
 
 procedure TCanvas.FrameRect(const Rect: TRect; cl1,cl2: integer);
